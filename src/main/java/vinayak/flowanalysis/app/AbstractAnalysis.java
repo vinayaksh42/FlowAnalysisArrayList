@@ -17,7 +17,7 @@ public abstract class AbstractAnalysis {
     this.method = method;
   }
 
-  protected abstract void flowThrough(@Nonnull Stmt stmt);
+  protected abstract void flowThrough(Stmt stmt);
 
   public void execute() {
     for (Stmt stmt : method.getBody().getStmts()) {

@@ -12,7 +12,7 @@ public class Runner1 extends Setup {
   @Test
   public void testArrayListUsage() {
     reporter = new VulnerabilityReporter();
-    executeMisuseAnalysis();
+    executeArrayListAnalysis();
     assertEquals(4, reporter.getArrayUnsafeUsageCount());
     assertEquals(5, reporter.getArraySafeUsageCount());
   }

@@ -16,8 +16,7 @@ public class ArrayListAnalysis extends AbstractAnalysis {
   }
 
   @Override
-  protected void flowThrough(@Nonnull Stmt stmt) {
-    prettyPrint(stmt);
+  protected void flowThrough(Stmt stmt) {
     if (stmt instanceof JAssignStmt) {
       // logic for storing ArrayList temporary stack variable names:
       AbstractDefinitionStmt defstmt = (AbstractDefinitionStmt) stmt;
@@ -77,7 +76,7 @@ public class ArrayListAnalysis extends AbstractAnalysis {
             }
             break;
           default:
-            // Add other cases as needed.
+            break;
         }
       }
     }

@@ -21,7 +21,7 @@ public abstract class Setup {
   protected JavaView view;
   protected static VulnerabilityReporter reporter;
 
-  public final void executeMisuseAnalysis() {
+  public final void executeArrayListAnalysis() {
 
     AnalysisInputLocation inputLocation = PathBasedAnalysisInputLocation.create(
         Paths.get("target/test-classes"), SourceType.Application);
@@ -48,7 +48,6 @@ public abstract class Setup {
 
     JavaSootMethod method = (JavaSootMethod) (sootMethod);
     ArrayListAnalysis analysis = new ArrayListAnalysis(method, reporter);
-    System.out.println(method.getBody());
     analysis.execute();
   }
 }
