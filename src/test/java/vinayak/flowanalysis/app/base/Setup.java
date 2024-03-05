@@ -1,6 +1,5 @@
 package vinayak.flowanalysis.app.base;
 
-import vinayak.flowanalysis.app.VulnerabilityReporter;
 import java.nio.file.*;
 import java.util.*;
 
@@ -19,7 +18,6 @@ import sootup.java.bytecode.inputlocation.PathBasedAnalysisInputLocation;
 public abstract class Setup {
 
   protected JavaView view;
-  protected static VulnerabilityReporter reporter;
 
   public final void executeArrayListAnalysis() {
 
@@ -47,7 +45,13 @@ public abstract class Setup {
     SootMethod sootMethod = sootClass.getMethod(methodSignature.getSubSignature()).get();
 
     JavaSootMethod method = (JavaSootMethod) (sootMethod);
-    ArrayListAnalysis analysis = new ArrayListAnalysis(method, reporter);
+    ArrayListAnalysis analysis = new ArrayListAnalysis(method);
     analysis.execute();
+  }
+
+  public static void main(String[] args) {
+    Setup setup = new Setup() {
+    };
+    setup.executeArrayListAnalysis();
   }
 }

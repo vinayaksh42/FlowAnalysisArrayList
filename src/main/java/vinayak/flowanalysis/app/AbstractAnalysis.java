@@ -8,12 +8,9 @@ import sootup.java.core.JavaSootMethod;
 public abstract class AbstractAnalysis {
 
   @Nonnull
-  protected VulnerabilityReporter reporter;
-  @Nonnull
   protected SootMethod method;
 
-  protected AbstractAnalysis(@Nonnull JavaSootMethod method, @Nonnull VulnerabilityReporter reporter) {
-    this.reporter = reporter;
+  protected AbstractAnalysis(@Nonnull JavaSootMethod method) {
     this.method = method;
   }
 

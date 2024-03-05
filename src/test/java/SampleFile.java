@@ -8,8 +8,15 @@ public class SampleFile {
 
   public static void main(String[] var0) {
     List<String> myList = new ArrayList<>();
+    List<String> NameList = new ArrayList<>();
     myList.add("Hello");
     myList.add("World");
+
+    // assign NameList to myList
+    NameList = myList;
+
+    // remove the second element from myList
+    myList.remove(1);
 
     // Scenario 1: Accessing list without checking if it's empty
     System.out.println(myList.get(0));
@@ -38,29 +45,52 @@ public class SampleFile {
     }
 
     // Scenario 6:
-    List<String> myList2 = new ArrayList<>();
-    if (!myList2.isEmpty()) {
-      System.out.println(myList2.get(0));
+    List<String> item = new ArrayList<>();
+    if (!item.isEmpty()) {
+      System.out.println(item.get(0));
     }
 
     // Scenario 7:
-    System.out.println(myList2.get(1));
+    System.out.println(item.get(1));
 
     // Scenario 8:
     Iterator<String> iterator = myList.iterator();
     while (iterator.hasNext()) {
-      String item = iterator.next();
-      System.out.println(item);
+      String next = iterator.next();
+      System.out.println(next);
     }
 
     // Scenario 9:
     if (!myList.isEmpty()) {
       Iterator<String> iterator1 = myList.iterator();
       while (iterator1.hasNext()) {
-        String item = iterator1.next();
-        System.out.println(item);
+        String next = iterator1.next();
+        System.out.println(next);
       }
     }
 
+    // Scenario 10: Should be counted as unsafe usage
+    myList.clear();
+    System.out.println(myList.get(1));
+
+    // Scenario 11: Should be counted as unsafe usage
+    if (!myList.isEmpty()) {
+      myList.clear();
+      System.out.println(myList.get(1));
+    }
+
+    // Scenario 12: Should be counted as unsafe usage
+    if (!myList.isEmpty()) {
+      myList.remove("Hello");
+      System.out.println(myList.get(1));
+    }
+
+    // Scenario 13: Should be counted as safe usage
+    if (!myList.isEmpty()) {
+      myList.remove("Hello");
+      if (!myList.isEmpty()) {
+        System.out.println(myList.get(1));
+      }
+    }
   }
 }
