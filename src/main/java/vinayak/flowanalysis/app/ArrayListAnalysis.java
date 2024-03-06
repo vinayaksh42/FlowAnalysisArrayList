@@ -28,7 +28,6 @@ public class ArrayListAnalysis extends AbstractAnalysis {
 
   @Override
   protected void flowThrough(Stmt stmt) {
-    System.out.println(stmt);
     if (stmt instanceof JInvokeStmt) {
       JInvokeStmt invokeStmt = (JInvokeStmt) stmt;
       if (invokeStmt.getInvokeExpr() instanceof JInterfaceInvokeExpr) {
@@ -38,7 +37,7 @@ public class ArrayListAnalysis extends AbstractAnalysis {
         if (methodName.equals("clear")) {
           List<Value> InvokeExprUsesclear = invokeStmt.getUses();
           for (Value use : InvokeExprUsesclear) {
-            if (this.getVariableMap().containsKey(use)) {
+            if (ArrayListAnalysis.getVariableMap().containsKey(use)) {
               this.storingVariableMap(use, false);
             }
           }
@@ -46,13 +45,14 @@ public class ArrayListAnalysis extends AbstractAnalysis {
         if (methodName.equals("remove")) {
           List<Value> InvokeExprUsesremove = invokeStmt.getUses();
           for (Value use : InvokeExprUsesremove) {
-            if (this.getVariableMap().containsKey(use)) {
+            if (ArrayListAnalysis.getVariableMap().containsKey(use)) {
               this.storingVariableMap(use, false);
             }
           }
         }
       }
     }
+
     if (stmt instanceof JAssignStmt) {
       AbstractDefinitionStmt defstmt = (AbstractDefinitionStmt) stmt;
       if (defstmt.getRightOp() instanceof JNewExpr) {
@@ -64,8 +64,15 @@ public class ArrayListAnalysis extends AbstractAnalysis {
         }
       }
 
-      for (Value temp : this.getTempNames()) {
+      for (Value temp : ArrayListAnalysis.getTempNames()) {
         if (defstmt.getRightOp().equals(temp)) {
+          this.storingVariableMap(defstmt.getLeftOp(), false);
+        }
+      }
+
+      // Reassignment of the ArrayList variable
+      if (!ArrayListAnalysis.getTempNames().contains(defstmt.getRightOp())) {
+        if (ArrayListAnalysis.getVariableMap().containsKey(defstmt.getLeftOp())) {
           this.storingVariableMap(defstmt.getLeftOp(), false);
         }
       }
@@ -78,7 +85,7 @@ public class ArrayListAnalysis extends AbstractAnalysis {
           case "isEmpty":
             List<Value> InvokeExprUsesIsEmpty = invokeStmt.getUses();
             for (Value use : InvokeExprUsesIsEmpty) {
-              if (this.getVariableMap().containsKey(use)) {
+              if (ArrayListAnalysis.getVariableMap().containsKey(use)) {
                 this.storingVariableMap(use, true);
               }
             }
@@ -86,8 +93,8 @@ public class ArrayListAnalysis extends AbstractAnalysis {
           case "get":
             List<Value> InvokeExprUsesGet = invokeStmt.getUses();
             for (Value use : InvokeExprUsesGet) {
-              if (this.getVariableMap().containsKey(use)) {
-                if (!this.getVariableMap().get(use)) {
+              if (ArrayListAnalysis.getVariableMap().containsKey(use)) {
+                if (!ArrayListAnalysis.getVariableMap().get(use)) {
                   this.updateArrayUsageCount(true);
                 } else {
                   this.updateArrayUsageCount(false);
@@ -99,8 +106,8 @@ public class ArrayListAnalysis extends AbstractAnalysis {
           case "iterator":
             List<Value> InvokeExprUsesIterator = invokeStmt.getUses();
             for (Value use : InvokeExprUsesIterator) {
-              if (this.getVariableMap().containsKey(use)) {
-                if (!this.getVariableMap().get(use)) {
+              if (ArrayListAnalysis.getVariableMap().containsKey(use)) {
+                if (!ArrayListAnalysis.getVariableMap().get(use)) {
                   this.updateArrayUsageCount(true);
                 } else {
                   this.updateArrayUsageCount(false);
@@ -151,5 +158,4 @@ public class ArrayListAnalysis extends AbstractAnalysis {
   public static int getArraySafeUsageCount() {
     return arraySafeUsageCount;
   }
-
 }

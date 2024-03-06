@@ -12,9 +12,6 @@ public class SampleFile {
     myList.add("Hello");
     myList.add("World");
 
-    // assign NameList to myList
-    NameList = myList;
-
     // remove the second element from myList
     myList.remove(1);
 
@@ -88,6 +85,22 @@ public class SampleFile {
     // Scenario 13: Should be counted as safe usage
     if (!myList.isEmpty()) {
       myList.remove("Hello");
+      if (!myList.isEmpty()) {
+        System.out.println(myList.get(1));
+      }
+    }
+
+    // Scenario 14: Should be counted as unsafe usage
+    if (!myList.isEmpty()) {
+      // assign NameList to myList
+      myList = NameList;
+      System.out.println(myList.get(1));
+    }
+
+    // Scenario 15: Should be counted as safe usage
+    if (!myList.isEmpty()) {
+      // assign NameList to myList
+      myList = NameList;
       if (!myList.isEmpty()) {
         System.out.println(myList.get(1));
       }

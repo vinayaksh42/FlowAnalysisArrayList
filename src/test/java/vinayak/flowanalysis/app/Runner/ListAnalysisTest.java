@@ -19,8 +19,8 @@ public class ListAnalysisTest extends Setup {
 
   @Test
   public void testArrayListUsage() {
-    assertEquals(7, ArrayListAnalysis.getArrayUnsafeUsageCount());
-    assertEquals(6, ArrayListAnalysis.getArraySafeUsageCount());
+    assertEquals(8, ArrayListAnalysis.getArrayUnsafeUsageCount());
+    assertEquals(7, ArrayListAnalysis.getArraySafeUsageCount());
   }
 
   // make a test if variableMap from ArrayListAnalysis has myList, NameList and
