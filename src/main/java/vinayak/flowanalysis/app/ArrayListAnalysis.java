@@ -41,6 +41,7 @@ public class ArrayListAnalysis extends ForwardAnalysis<Set<ArrayAnalysisFact>> {
           Value base = interfaceInvokeExpr.getBase();
           if (this.getVariableMap().containsKey(base)) {
             this.storingVariableMap(base, false);
+            updateStateVariable(out, ArrayAnalysis.Unsafe, base);
             updateState(out, ArrayAnalysis.Unsafe);
           }
         }
@@ -48,6 +49,7 @@ public class ArrayListAnalysis extends ForwardAnalysis<Set<ArrayAnalysisFact>> {
           Value baseIsEmpty = interfaceInvokeExpr.getBase();
           if (this.getVariableMap().containsKey(baseIsEmpty)) {
             this.storingVariableMap(baseIsEmpty, true);
+            updateStateVariable(out, ArrayAnalysis.Safe, baseIsEmpty);
             updateState(out, ArrayAnalysis.Safe);
           }
         }
@@ -60,6 +62,7 @@ public class ArrayListAnalysis extends ForwardAnalysis<Set<ArrayAnalysisFact>> {
             } else {
               this.updateArrayUsageCount(false);
               this.storingVariableMap(base, false);
+              updateStateVariable(out, ArrayAnalysis.Unsafe, base);
               updateState(out, ArrayAnalysis.Safe);
             }
           }
@@ -81,13 +84,15 @@ public class ArrayListAnalysis extends ForwardAnalysis<Set<ArrayAnalysisFact>> {
 
       if (this.getVariableMap().containsKey(defstmt.getLeftOp())) {
         this.storingVariableMap(defstmt.getLeftOp(), false);
+        updateStateVariable(out, ArrayAnalysis.Unsafe, defstmt.getLeftOp());
         updateState(out, ArrayAnalysis.Unsafe);
       }
 
       for (ArrayAnalysisFact fact : in) {
         if (fact.getState() == ArrayAnalysis.ArrayDeclaration) {
-          in.clear();
+          in.remove(fact);
           this.storingVariableMap(defstmt.getLeftOp(), false);
+          updateStateVariable(out, ArrayAnalysis.Unsafe, defstmt.getLeftOp());
         }
       }
     }
@@ -143,6 +148,12 @@ public class ArrayListAnalysis extends ForwardAnalysis<Set<ArrayAnalysisFact>> {
 
   public static int getArraySafeUsageCount() {
     return arraySafeUsageCount;
+  }
+
+  private void updateStateVariable(Set<ArrayAnalysisFact> facts, ArrayAnalysisFact.ArrayAnalysis newState,
+      Value variable) {
+    ArrayAnalysisFact newFact = new ArrayAnalysisFact(newState, variable);
+    facts.add(newFact);
   }
 
   private void updateState(Set<ArrayAnalysisFact> facts, ArrayAnalysisFact.ArrayAnalysis newState) {

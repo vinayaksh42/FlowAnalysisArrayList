@@ -1,7 +1,5 @@
 package vinayak.flowanalysis.app;
 
-import java.util.HashMap;
-import java.util.Map;
 import javax.annotation.Nonnull;
 import sootup.core.jimple.basic.Value;
 
@@ -12,17 +10,25 @@ public class ArrayAnalysisFact {
   }
 
   private ArrayAnalysis state;
+  private Value variable;
 
   public ArrayAnalysisFact(@Nonnull ArrayAnalysis state) {
     this.state = state;
+    this.variable = null; // Indicates a general state
   }
 
-  public boolean isUnsafe() {
-    return state == ArrayAnalysis.Unsafe;
+  public ArrayAnalysisFact(@Nonnull ArrayAnalysis state, @Nonnull Value variable) {
+    this.state = state;
+    this.variable = variable;
   }
 
   @Nonnull
   public ArrayAnalysis getState() {
     return this.state;
+  }
+
+  @Nonnull
+  public Value getVariable() {
+    return this.variable;
   }
 }
