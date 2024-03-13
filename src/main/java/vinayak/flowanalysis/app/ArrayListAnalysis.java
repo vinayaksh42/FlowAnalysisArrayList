@@ -1,10 +1,13 @@
 package vinayak.flowanalysis.app;
 
 import javax.annotation.Nonnull;
+
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+
+import vinayak.flowanalysis.app.ArrayAnalysisFact.ArrayAnalysis;
 
 import sootup.core.jimple.common.stmt.Stmt;
 import sootup.java.core.JavaSootMethod;
@@ -12,119 +15,110 @@ import sootup.core.jimple.common.stmt.*;
 import sootup.core.jimple.common.expr.JInterfaceInvokeExpr;
 import sootup.core.jimple.common.expr.JNewExpr;
 import sootup.core.jimple.basic.Value;
+import sootup.core.jimple.common.expr.AbstractInvokeExpr;
 
-public class ArrayListAnalysis extends AbstractAnalysis {
+public class ArrayListAnalysis extends ForwardAnalysis<Set<ArrayAnalysisFact>> {
 
-  public static List<Value> TempNames;
-  public static Map<Value, Boolean> variableMap;
-  public static int arrayUnsafeUsageCount;
-  public static int arraySafeUsageCount;
+  // change from static to non-static
+  private final Map<Value, Boolean> variableMap;
+  static int arrayUnsafeUsageCount;
+  static int arraySafeUsageCount;
 
   public ArrayListAnalysis(@Nonnull JavaSootMethod method) {
     super(method);
-    TempNames = new ArrayList<>();
     variableMap = new HashMap<>();
   }
 
   @Override
-  protected void flowThrough(Stmt stmt) {
-    if (stmt instanceof JInvokeStmt) {
-      JInvokeStmt invokeStmt = (JInvokeStmt) stmt;
-      if (invokeStmt.getInvokeExpr() instanceof JInterfaceInvokeExpr) {
-        JInterfaceInvokeExpr interfaceInvokeExpr = (JInterfaceInvokeExpr) invokeStmt.getInvokeExpr();
-        String methodName = interfaceInvokeExpr.getMethodSignature().getName();
-        System.out.println(methodName);
-        if (methodName.equals("clear")) {
-          List<Value> InvokeExprUsesclear = invokeStmt.getUses();
-          for (Value use : InvokeExprUsesclear) {
-            if (ArrayListAnalysis.getVariableMap().containsKey(use)) {
-              this.storingVariableMap(use, false);
-            }
+  protected void flowThrough(@Nonnull Set<ArrayAnalysisFact> in, @Nonnull Stmt stmt,
+      @Nonnull Set<ArrayAnalysisFact> out) {
+    if (stmt.containsInvokeExpr()) {
+      AbstractInvokeExpr invokeStmt = stmt.getInvokeExpr();
+      if (invokeStmt instanceof JInterfaceInvokeExpr) {
+        JInterfaceInvokeExpr interfaceInvokeExpr = (JInterfaceInvokeExpr) invokeStmt;
+        String methodName = invokeStmt.getMethodSignature().getName();
+        if (methodName.equals(ConstantValue.REMOVE) || methodName.equals(ConstantValue.CLEAR)) {
+          Value base = interfaceInvokeExpr.getBase();
+          if (this.getVariableMap().containsKey(base)) {
+            this.storingVariableMap(base, false);
+            updateState(out, ArrayAnalysis.Unsafe);
           }
         }
-        if (methodName.equals("remove")) {
-          List<Value> InvokeExprUsesremove = invokeStmt.getUses();
-          for (Value use : InvokeExprUsesremove) {
-            if (ArrayListAnalysis.getVariableMap().containsKey(use)) {
-              this.storingVariableMap(use, false);
+        if (methodName.equals(ConstantValue.ISEMPTY)) {
+          Value baseIsEmpty = interfaceInvokeExpr.getBase();
+          if (this.getVariableMap().containsKey(baseIsEmpty)) {
+            this.storingVariableMap(baseIsEmpty, true);
+            updateState(out, ArrayAnalysis.Safe);
+          }
+        }
+        if (methodName.equals(ConstantValue.ITERATOR) || methodName.equals(ConstantValue.GET)) {
+          Value base = interfaceInvokeExpr.getBase();
+          if (this.getVariableMap().containsKey(base)) {
+            if (!this.getVariableMap().get(base)) {
+              this.updateArrayUsageCount(true);
+              updateState(out, ArrayAnalysis.Unsafe);
+            } else {
+              this.updateArrayUsageCount(false);
+              this.storingVariableMap(base, false);
+              updateState(out, ArrayAnalysis.Safe);
             }
           }
         }
       }
     }
 
+    // Tracking declration of ArrayList Vairable
     if (stmt instanceof JAssignStmt) {
-      AbstractDefinitionStmt defstmt = (AbstractDefinitionStmt) stmt;
+      JAssignStmt defstmt = (JAssignStmt) stmt;
       if (defstmt.getRightOp() instanceof JNewExpr) {
         JNewExpr newExpr = (JNewExpr) defstmt.getRightOp();
         String className = newExpr.getType().getClassName();
 
-        if (className.equals(this.getArrayListClasString())) {
-          this.storingTempNames(defstmt.getLeftOp());
+        if (className.equals(ConstantValue.ARRAYLIST_CLASS_STRING)) {
+          updateState(out, ArrayAnalysis.ArrayDeclaration);
         }
       }
 
-      for (Value temp : ArrayListAnalysis.getTempNames()) {
-        if (defstmt.getRightOp().equals(temp)) {
+      if (this.getVariableMap().containsKey(defstmt.getLeftOp())) {
+        this.storingVariableMap(defstmt.getLeftOp(), false);
+        updateState(out, ArrayAnalysis.Unsafe);
+      }
+
+      for (ArrayAnalysisFact fact : in) {
+        if (fact.getState() == ArrayAnalysis.ArrayDeclaration) {
+          in.clear();
           this.storingVariableMap(defstmt.getLeftOp(), false);
-        }
-      }
-
-      // Reassignment of the ArrayList variable
-      if (!ArrayListAnalysis.getTempNames().contains(defstmt.getRightOp())) {
-        if (ArrayListAnalysis.getVariableMap().containsKey(defstmt.getLeftOp())) {
-          this.storingVariableMap(defstmt.getLeftOp(), false);
-        }
-      }
-
-      if (defstmt.getRightOp() instanceof JInterfaceInvokeExpr) {
-        JInterfaceInvokeExpr invokeStmt = (JInterfaceInvokeExpr) defstmt.getRightOp();
-        String methodName = invokeStmt.getMethodSignature().getName();
-
-        switch (methodName) {
-          case "isEmpty":
-            List<Value> InvokeExprUsesIsEmpty = invokeStmt.getUses();
-            for (Value use : InvokeExprUsesIsEmpty) {
-              if (ArrayListAnalysis.getVariableMap().containsKey(use)) {
-                this.storingVariableMap(use, true);
-              }
-            }
-            break;
-          case "get":
-            List<Value> InvokeExprUsesGet = invokeStmt.getUses();
-            for (Value use : InvokeExprUsesGet) {
-              if (ArrayListAnalysis.getVariableMap().containsKey(use)) {
-                if (!ArrayListAnalysis.getVariableMap().get(use)) {
-                  this.updateArrayUsageCount(true);
-                } else {
-                  this.updateArrayUsageCount(false);
-                  this.storingVariableMap(use, false);
-                }
-              }
-            }
-            break;
-          case "iterator":
-            List<Value> InvokeExprUsesIterator = invokeStmt.getUses();
-            for (Value use : InvokeExprUsesIterator) {
-              if (ArrayListAnalysis.getVariableMap().containsKey(use)) {
-                if (!ArrayListAnalysis.getVariableMap().get(use)) {
-                  this.updateArrayUsageCount(true);
-                } else {
-                  this.updateArrayUsageCount(false);
-                  this.storingVariableMap(use, false);
-                }
-              }
-            }
-            break;
-          default:
-            break;
         }
       }
     }
+
+    for (ArrayAnalysisFact fact : in) {
+      if (fact.getState() == ArrayAnalysis.ArrayDeclaration) {
+        copy(in, out);
+      }
+    }
+    prettyPrint(in, stmt, out);
   }
 
-  public void storingTempNames(Value value) {
-    TempNames.add(value);
+  @Nonnull
+  @Override
+  protected Set<ArrayAnalysisFact> newInitialFlow() {
+    return new HashSet<>();
+  }
+
+  @Override
+  protected void copy(@Nonnull Set<ArrayAnalysisFact> source, @Nonnull Set<ArrayAnalysisFact> dest) {
+    for (ArrayAnalysisFact fact : source) {
+      dest.add(fact);
+    }
+  }
+
+  @Override
+  protected void merge(@Nonnull Set<ArrayAnalysisFact> in1, @Nonnull Set<ArrayAnalysisFact> in2,
+      @Nonnull Set<ArrayAnalysisFact> out) {
+    out.clear();
+    out.addAll(in1);
+    out.addAll(in2);
   }
 
   public void storingVariableMap(Value value, Boolean isUnsafe) {
@@ -139,15 +133,7 @@ public class ArrayListAnalysis extends AbstractAnalysis {
     }
   }
 
-  public String getArrayListClasString() {
-    return "ArrayList";
-  }
-
-  public static List<Value> getTempNames() {
-    return TempNames;
-  }
-
-  public static Map<Value, Boolean> getVariableMap() {
+  public Map<Value, Boolean> getVariableMap() {
     return variableMap;
   }
 
@@ -157,5 +143,10 @@ public class ArrayListAnalysis extends AbstractAnalysis {
 
   public static int getArraySafeUsageCount() {
     return arraySafeUsageCount;
+  }
+
+  private void updateState(Set<ArrayAnalysisFact> facts, ArrayAnalysisFact.ArrayAnalysis newState) {
+    ArrayAnalysisFact newFact = new ArrayAnalysisFact(newState);
+    facts.add(newFact);
   }
 }

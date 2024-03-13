@@ -4,6 +4,7 @@ import java.nio.file.*;
 import java.util.*;
 
 import vinayak.flowanalysis.app.ArrayListAnalysis;
+import vinayak.flowanalysis.app.ArrayAnalysisFact;
 import sootup.core.inputlocation.AnalysisInputLocation;
 import sootup.core.model.SootMethod;
 import sootup.core.model.SootClass;
@@ -12,6 +13,7 @@ import sootup.java.core.JavaSootMethod;
 import sootup.java.core.views.JavaView;
 import sootup.core.model.SourceType;
 import sootup.core.signatures.MethodSignature;
+import sootup.core.jimple.common.stmt.Stmt;
 import sootup.core.views.View;
 import sootup.java.bytecode.inputlocation.PathBasedAnalysisInputLocation;
 
@@ -19,7 +21,9 @@ public abstract class Setup {
 
   protected JavaView view;
 
-  public final void executeArrayListAnalysis() {
+  final protected Map<SootMethod, Map<Stmt, Set<ArrayAnalysisFact>>> executeArrayListAnalysis() {
+
+    Map<SootMethod, Map<Stmt, Set<ArrayAnalysisFact>>> outFacts = new HashMap<>();
 
     AnalysisInputLocation inputLocation = PathBasedAnalysisInputLocation.create(
         Paths.get("target/test-classes"), SourceType.Application);
@@ -47,6 +51,9 @@ public abstract class Setup {
     JavaSootMethod method = (JavaSootMethod) (sootMethod);
     ArrayListAnalysis analysis = new ArrayListAnalysis(method);
     analysis.execute();
+    outFacts.put(method, analysis.getStmtToAfterFlow());
+    System.out.println(outFacts);
+    return outFacts;
   }
 
   public static void main(String[] args) {
