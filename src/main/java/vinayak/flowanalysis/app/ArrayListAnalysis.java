@@ -4,126 +4,110 @@ import javax.annotation.Nonnull;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
 
 import vinayak.flowanalysis.app.ArrayAnalysisFact.ArrayAnalysis;
 
 import sootup.core.jimple.common.stmt.Stmt;
 import sootup.java.core.JavaSootMethod;
-import sootup.core.jimple.common.stmt.*;
 import sootup.core.jimple.common.expr.JInterfaceInvokeExpr;
-import sootup.core.jimple.common.expr.JNewExpr;
 import sootup.core.jimple.basic.Value;
+import sootup.analysis.intraprocedural.ForwardFlowAnalysis;
 import sootup.core.jimple.common.expr.AbstractInvokeExpr;
+import sootup.core.types.ClassType;
 
-public class ArrayListAnalysis extends ForwardAnalysis<Set<ArrayAnalysisFact>> {
+public class ArrayListAnalysis extends ForwardFlowAnalysis<Map<Value, ArrayAnalysisFact>> {
 
   // change from static to non-static
   private final Map<Value, Boolean> variableMap;
   static int arrayUnsafeUsageCount;
   static int arraySafeUsageCount;
 
+  @Nonnull
+  protected final JavaSootMethod method;
+
   public ArrayListAnalysis(@Nonnull JavaSootMethod method) {
-    super(method);
+    super(method.getBody().getStmtGraph());
+    this.method = method;
+    System.out.println("Method: " + method.getSignature());
     variableMap = new HashMap<>();
   }
 
+  protected void prettyPrint(@Nonnull Map<Value, ArrayAnalysisFact> in, @Nonnull Stmt stmt,
+      @Nonnull Map<Value, ArrayAnalysisFact> out) {
+    String s = String.format("\t%10s%s\n\t%10s%s\n\t%10s%s\n", "In Fact: ", in, "Stmt: ", stmt, "Out Fact: ", out);
+    System.out.println(s);
+  }
+
+  public Map<Stmt, Map<Value, ArrayAnalysisFact>> getStmtToAfterFlow() {
+    return this.stmtToAfterFlow;
+  }
+
   @Override
-  protected void flowThrough(@Nonnull Set<ArrayAnalysisFact> in, @Nonnull Stmt stmt,
-      @Nonnull Set<ArrayAnalysisFact> out) {
+  protected void flowThrough(@Nonnull Map<Value, ArrayAnalysisFact> in, @Nonnull Stmt stmt,
+      @Nonnull Map<Value, ArrayAnalysisFact> out) {
+    // System.out.println("Start");
+    // prettyPrint(in, stmt, out);
+    copy(in, out);
     if (stmt.containsInvokeExpr()) {
       AbstractInvokeExpr invokeStmt = stmt.getInvokeExpr();
       if (invokeStmt instanceof JInterfaceInvokeExpr) {
         JInterfaceInvokeExpr interfaceInvokeExpr = (JInterfaceInvokeExpr) invokeStmt;
         String methodName = invokeStmt.getMethodSignature().getName();
-        if (methodName.equals(ConstantValue.REMOVE) || methodName.equals(ConstantValue.CLEAR)) {
-          Value base = interfaceInvokeExpr.getBase();
-          if (this.getVariableMap().containsKey(base)) {
+        ClassType baseClass = (interfaceInvokeExpr.getMethodSignature().getDeclClassType());
+        Value base = interfaceInvokeExpr.getBase();
+        if (baseClass.getClassName().equals(ConstantValue.LIST_CLASS_NAME)) {
+          if (methodName.equals(ConstantValue.REMOVE) || methodName.equals(ConstantValue.CLEAR)) {
             this.storingVariableMap(base, false);
-            updateStateVariable(out, ArrayAnalysis.Unsafe, base);
-            updateState(out, ArrayAnalysis.Unsafe);
+            updateState(out, ArrayAnalysis.Unsafe, base);
           }
-        }
-        if (methodName.equals(ConstantValue.ISEMPTY)) {
-          Value baseIsEmpty = interfaceInvokeExpr.getBase();
-          if (this.getVariableMap().containsKey(baseIsEmpty)) {
-            this.storingVariableMap(baseIsEmpty, true);
-            updateStateVariable(out, ArrayAnalysis.Safe, baseIsEmpty);
-            updateState(out, ArrayAnalysis.Safe);
+          if (methodName.equals(ConstantValue.ISEMPTY)) {
+            this.storingVariableMap(base, true);
+            updateState(out, ArrayAnalysis.Safe, base);
           }
-        }
-        if (methodName.equals(ConstantValue.ITERATOR) || methodName.equals(ConstantValue.GET)) {
-          Value base = interfaceInvokeExpr.getBase();
-          if (this.getVariableMap().containsKey(base)) {
-            if (!this.getVariableMap().get(base)) {
+          if (methodName.equals(ConstantValue.ITERATOR) || methodName.equals(ConstantValue.GET)) {
+            if (findStateByLocalName(in, base) == ArrayAnalysis.Unsafe || findStateByLocalName(in, base) == null) {
+              updateState(out, ArrayAnalysis.Unsafe, base);
               this.updateArrayUsageCount(true);
-              updateState(out, ArrayAnalysis.Unsafe);
             } else {
               this.updateArrayUsageCount(false);
               this.storingVariableMap(base, false);
-              updateStateVariable(out, ArrayAnalysis.Unsafe, base);
-              updateState(out, ArrayAnalysis.Safe);
             }
           }
         }
       }
     }
+    // System.out.println("End");
+    // prettyPrint(in, stmt, out);
+    // System.out.println("=============================================");
+  }
 
-    // Tracking declration of ArrayList Vairable
-    if (stmt instanceof JAssignStmt) {
-      JAssignStmt defstmt = (JAssignStmt) stmt;
-      if (defstmt.getRightOp() instanceof JNewExpr) {
-        JNewExpr newExpr = (JNewExpr) defstmt.getRightOp();
-        String className = newExpr.getType().getClassName();
-
-        if (className.equals(ConstantValue.ARRAYLIST_CLASS_STRING)) {
-          updateState(out, ArrayAnalysis.ArrayDeclaration);
-        }
-      }
-
-      if (this.getVariableMap().containsKey(defstmt.getLeftOp())) {
-        this.storingVariableMap(defstmt.getLeftOp(), false);
-        updateStateVariable(out, ArrayAnalysis.Unsafe, defstmt.getLeftOp());
-        updateState(out, ArrayAnalysis.Unsafe);
-      }
-
-      for (ArrayAnalysisFact fact : in) {
-        if (fact.getState() == ArrayAnalysis.ArrayDeclaration) {
-          in.remove(fact);
-          this.storingVariableMap(defstmt.getLeftOp(), false);
-          updateStateVariable(out, ArrayAnalysis.Unsafe, defstmt.getLeftOp());
-        }
-      }
-    }
-
-    for (ArrayAnalysisFact fact : in) {
-      if (fact.getState() == ArrayAnalysis.ArrayDeclaration) {
-        copy(in, out);
-      }
-    }
-    prettyPrint(in, stmt, out);
+  public ArrayAnalysisFact.ArrayAnalysis findStateByLocalName(Map<Value, ArrayAnalysisFact> facts, Value localName) {
+    ArrayAnalysisFact fact = facts.get(localName);
+    return fact != null ? fact.getState() : null;
   }
 
   @Nonnull
   @Override
-  protected Set<ArrayAnalysisFact> newInitialFlow() {
-    return new HashSet<>();
+  protected Map<Value, ArrayAnalysisFact> newInitialFlow() {
+    return new HashMap<>();
   }
 
   @Override
-  protected void copy(@Nonnull Set<ArrayAnalysisFact> source, @Nonnull Set<ArrayAnalysisFact> dest) {
-    for (ArrayAnalysisFact fact : source) {
-      dest.add(fact);
-    }
+  protected void copy(@Nonnull Map<Value, ArrayAnalysisFact> source, @Nonnull Map<Value, ArrayAnalysisFact> dest) {
+    dest.clear();
+    dest.putAll(source);
   }
 
   @Override
-  protected void merge(@Nonnull Set<ArrayAnalysisFact> in1, @Nonnull Set<ArrayAnalysisFact> in2,
-      @Nonnull Set<ArrayAnalysisFact> out) {
+  protected void merge(@Nonnull Map<Value, ArrayAnalysisFact> in1, @Nonnull Map<Value, ArrayAnalysisFact> in2,
+      @Nonnull Map<Value, ArrayAnalysisFact> out) {
     out.clear();
-    out.addAll(in1);
-    out.addAll(in2);
+    for (Value key : in1.keySet()) {
+      out.put(key, new ArrayAnalysisFact(ArrayAnalysisFact.ArrayAnalysis.Unsafe));
+    }
+    for (Value key : in2.keySet()) {
+      out.put(key, new ArrayAnalysisFact(ArrayAnalysisFact.ArrayAnalysis.Unsafe));
+    }
   }
 
   public void storingVariableMap(Value value, Boolean isUnsafe) {
@@ -150,14 +134,13 @@ public class ArrayListAnalysis extends ForwardAnalysis<Set<ArrayAnalysisFact>> {
     return arraySafeUsageCount;
   }
 
-  private void updateStateVariable(Set<ArrayAnalysisFact> facts, ArrayAnalysisFact.ArrayAnalysis newState,
+  private void updateState(Map<Value, ArrayAnalysisFact> facts, ArrayAnalysisFact.ArrayAnalysis newState,
       Value variable) {
-    ArrayAnalysisFact newFact = new ArrayAnalysisFact(newState, variable);
-    facts.add(newFact);
+    facts.put(variable, new ArrayAnalysisFact(newState));
   }
 
-  private void updateState(Set<ArrayAnalysisFact> facts, ArrayAnalysisFact.ArrayAnalysis newState) {
-    ArrayAnalysisFact newFact = new ArrayAnalysisFact(newState);
-    facts.add(newFact);
+  @Override
+  public void execute() {
+    super.execute();
   }
 }

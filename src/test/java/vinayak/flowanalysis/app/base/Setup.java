@@ -10,6 +10,7 @@ import sootup.core.model.SootMethod;
 import sootup.core.model.SootClass;
 import sootup.core.types.ClassType;
 import sootup.java.core.JavaSootMethod;
+import sootup.core.jimple.basic.Value;
 import sootup.java.core.views.JavaView;
 import sootup.core.model.SourceType;
 import sootup.core.signatures.MethodSignature;
@@ -21,9 +22,9 @@ public abstract class Setup {
 
   protected JavaView view;
 
-  final protected Map<SootMethod, Map<Stmt, Set<ArrayAnalysisFact>>> executeArrayListAnalysis() {
+  final protected Map<SootMethod, Map<Stmt, Map<Value, ArrayAnalysisFact>>> executeArrayListAnalysis() {
 
-    Map<SootMethod, Map<Stmt, Set<ArrayAnalysisFact>>> outFacts = new HashMap<>();
+    Map<SootMethod, Map<Stmt, Map<Value, ArrayAnalysisFact>>> outFacts = new HashMap<>();
 
     AnalysisInputLocation inputLocation = PathBasedAnalysisInputLocation.create(
         Paths.get("target/test-classes"), SourceType.Application);

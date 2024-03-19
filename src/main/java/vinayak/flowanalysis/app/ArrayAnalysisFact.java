@@ -1,25 +1,17 @@
 package vinayak.flowanalysis.app;
 
 import javax.annotation.Nonnull;
-import sootup.core.jimple.basic.Value;
 
 public class ArrayAnalysisFact {
 
   public enum ArrayAnalysis {
-    Safe, Unsafe, ArrayDeclaration
+    Safe, Unsafe
   }
 
-  private ArrayAnalysis state;
-  private Value variable;
+  public ArrayAnalysis state;
 
   public ArrayAnalysisFact(@Nonnull ArrayAnalysis state) {
     this.state = state;
-    this.variable = null; // Indicates a general state
-  }
-
-  public ArrayAnalysisFact(@Nonnull ArrayAnalysis state, @Nonnull Value variable) {
-    this.state = state;
-    this.variable = variable;
   }
 
   @Nonnull
@@ -27,8 +19,26 @@ public class ArrayAnalysisFact {
     return this.state;
   }
 
-  @Nonnull
-  public Value getVariable() {
-    return this.variable;
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((state == null) ? 0 : state.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null) {
+      return false;
+    }
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+    ArrayAnalysisFact other = (ArrayAnalysisFact) obj;
+    return state.equals(other.state);
   }
 }

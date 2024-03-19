@@ -7,4 +7,5 @@ public class ConstantValue {
   public static final String ITERATOR = "iterator";
   public static final String GET = "get";
   public static final String ARRAYLIST_CLASS_STRING = "ArrayList";
+  public static final String LIST_CLASS_NAME = "List";
 }

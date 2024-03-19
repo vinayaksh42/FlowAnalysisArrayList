@@ -4,14 +4,9 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Before;
 import org.junit.Test;
-import java.util.*;
 
 import vinayak.flowanalysis.app.ArrayListAnalysis;
 import vinayak.flowanalysis.app.base.Setup;
-import vinayak.flowanalysis.app.ArrayAnalysisFact;
-
-import sootup.core.jimple.common.stmt.Stmt;
-import sootup.core.model.SootMethod;
 
 public class ListAnalysisTest extends Setup {
 
@@ -22,7 +17,7 @@ public class ListAnalysisTest extends Setup {
 
   @Test
   public void testArrayListUsage() {
-    assertEquals(8, ArrayListAnalysis.getArrayUnsafeUsageCount());
-    assertEquals(7, ArrayListAnalysis.getArraySafeUsageCount());
+    assertEquals(6, ArrayListAnalysis.getArrayUnsafeUsageCount());
+    assertEquals(6, ArrayListAnalysis.getArraySafeUsageCount());
   }
 }
