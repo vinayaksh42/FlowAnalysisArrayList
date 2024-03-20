@@ -79,5 +79,12 @@ public class SampleFile {
         System.out.println(myList.get(1));
       }
     }
+
+    // Scenario 13: unsafe
+    System.out.println(myList.get(1));
+
+    // Scenario 14: safe
+    myList.isEmpty();
+    System.out.println(myList.get(1));
   }
 }

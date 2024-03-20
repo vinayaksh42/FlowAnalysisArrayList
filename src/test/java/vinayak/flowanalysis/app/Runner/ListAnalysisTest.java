@@ -23,7 +23,7 @@ public class ListAnalysisTest extends Setup {
   }
 
   @Test
-  public void IsEmptyCheck() {
+  public void ArrayListAnalysis_IsEmpty_SafeFact() {
     Map<SootMethod, Map<Stmt, Map<Value, ArrayAnalysisFact>>> outFacts = executeArrayListAnalysis();
     // test out facts for isEmpty call
     for (SootMethod method : outFacts.keySet()) {
@@ -44,7 +44,7 @@ public class ListAnalysisTest extends Setup {
   }
 
   @Test
-  public void RemoveAndClearCheck() {
+  public void ArrayListAnalysis_RemoveAndClear_UnsafeFact() {
     Map<SootMethod, Map<Stmt, Map<Value, ArrayAnalysisFact>>> outFacts = executeArrayListAnalysis();
     // test out facts for remove call
     for (SootMethod method : outFacts.keySet()) {
@@ -66,7 +66,7 @@ public class ListAnalysisTest extends Setup {
   }
 
   @Test
-  public void IteratorAndGetCheck() {
+  public void ArrayListAnalysis_GetAndIterator_SafeOrUnsafeFact() {
     Map<SootMethod, Map<Stmt, Map<Value, ArrayAnalysisFact>>> outFacts = executeArrayListAnalysis();
     // test out facts for iterator and get call
     for (SootMethod method : outFacts.keySet()) {
@@ -87,6 +87,22 @@ public class ListAnalysisTest extends Setup {
               }
             }
           }
+        }
+      }
+    }
+  }
+
+  @Test
+  public void ArrayListAnalysis_flowThrough_SafeOrUnsafeFact() {
+    Map<SootMethod, Map<Stmt, Map<Value, ArrayAnalysisFact>>> outFacts = executeArrayListAnalysis();
+    for (SootMethod method : outFacts.keySet()) {
+      Map<Stmt, Map<Value, ArrayAnalysisFact>> result = outFacts.get(method);
+      Map<Value, ArrayAnalysisFact> lastValue = result.get(result.keySet().toArray()[result.size() - 1]);
+      for (Value localName : lastValue.keySet()) {
+        if (localName.toString().equals("ListNumber2")) {
+          assertEquals(ArrayAnalysisFact.ArrayAnalysis.Unsafe, findStateByLocalName(lastValue, localName));
+        } else if (localName.toString().equals("myList")) {
+          assertEquals(ArrayAnalysisFact.ArrayAnalysis.Safe, findStateByLocalName(lastValue, localName));
         }
       }
     }
