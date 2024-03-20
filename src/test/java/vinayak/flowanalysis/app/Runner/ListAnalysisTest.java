@@ -2,6 +2,7 @@ package vinayak.flowanalysis.app.Runner;
 
 import static org.junit.Assert.assertEquals;
 
+import org.junit.Before;
 import org.junit.Test;
 import java.util.*;
 
@@ -17,15 +18,20 @@ import sootup.core.jimple.common.expr.AbstractInvokeExpr;
 
 public class ListAnalysisTest extends Setup {
 
+  public Map<SootMethod, Map<Stmt, Map<Value, ArrayAnalysisFact>>> outFacts;
+
   public ArrayAnalysisFact.ArrayAnalysis findStateByLocalName(Map<Value, ArrayAnalysisFact> facts, Value localName) {
     ArrayAnalysisFact fact = facts.get(localName);
     return fact != null ? fact.getState() : null;
   }
 
+  @Before
+  public void Setup() {
+    outFacts = executeArrayListAnalysis();
+  }
+
   @Test
   public void ArrayListAnalysis_IsEmpty_SafeFact() {
-    Map<SootMethod, Map<Stmt, Map<Value, ArrayAnalysisFact>>> outFacts = executeArrayListAnalysis();
-    // test out facts for isEmpty call
     for (SootMethod method : outFacts.keySet()) {
       Map<Stmt, Map<Value, ArrayAnalysisFact>> result = outFacts.get(method);
       for (Stmt stmt : result.keySet()) {
@@ -45,8 +51,6 @@ public class ListAnalysisTest extends Setup {
 
   @Test
   public void ArrayListAnalysis_RemoveAndClear_UnsafeFact() {
-    Map<SootMethod, Map<Stmt, Map<Value, ArrayAnalysisFact>>> outFacts = executeArrayListAnalysis();
-    // test out facts for remove call
     for (SootMethod method : outFacts.keySet()) {
       Map<Stmt, Map<Value, ArrayAnalysisFact>> result = outFacts.get(method);
       for (Stmt stmt : result.keySet()) {
@@ -67,8 +71,6 @@ public class ListAnalysisTest extends Setup {
 
   @Test
   public void ArrayListAnalysis_GetAndIterator_SafeOrUnsafeFact() {
-    Map<SootMethod, Map<Stmt, Map<Value, ArrayAnalysisFact>>> outFacts = executeArrayListAnalysis();
-    // test out facts for iterator and get call
     for (SootMethod method : outFacts.keySet()) {
       Map<Stmt, Map<Value, ArrayAnalysisFact>> result = outFacts.get(method);
       for (Stmt stmt : result.keySet()) {
@@ -94,7 +96,6 @@ public class ListAnalysisTest extends Setup {
 
   @Test
   public void ArrayListAnalysis_flowThrough_SafeOrUnsafeFact() {
-    Map<SootMethod, Map<Stmt, Map<Value, ArrayAnalysisFact>>> outFacts = executeArrayListAnalysis();
     for (SootMethod method : outFacts.keySet()) {
       Map<Stmt, Map<Value, ArrayAnalysisFact>> result = outFacts.get(method);
       Map<Value, ArrayAnalysisFact> lastValue = result.get(result.keySet().toArray()[result.size() - 1]);
