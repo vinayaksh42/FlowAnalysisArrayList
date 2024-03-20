@@ -26,7 +26,7 @@ public class ListAnalysisTest extends Setup {
   }
 
   @Before
-  public void Setup() {
+  public void setup() {
     outFacts = executeArrayListAnalysis();
   }
 
