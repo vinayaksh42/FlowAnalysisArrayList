@@ -53,13 +53,6 @@ public abstract class Setup {
     ArrayListAnalysis analysis = new ArrayListAnalysis(method);
     analysis.execute();
     outFacts.put(method, analysis.getStmtToAfterFlow());
-    System.out.println(outFacts);
     return outFacts;
-  }
-
-  public static void main(String[] args) {
-    Setup setup = new Setup() {
-    };
-    setup.executeArrayListAnalysis();
   }
 }

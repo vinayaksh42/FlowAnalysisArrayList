@@ -2,22 +2,93 @@ package vinayak.flowanalysis.app.Runner;
 
 import static org.junit.Assert.assertEquals;
 
-import org.junit.Before;
 import org.junit.Test;
+import java.util.*;
 
-import vinayak.flowanalysis.app.ArrayListAnalysis;
 import vinayak.flowanalysis.app.base.Setup;
+import vinayak.flowanalysis.app.ArrayAnalysisFact;
+import vinayak.flowanalysis.app.ConstantValue;
+
+import sootup.core.model.SootMethod;
+import sootup.core.jimple.common.stmt.Stmt;
+import sootup.core.jimple.basic.Value;
+import sootup.core.jimple.common.expr.JInterfaceInvokeExpr;
+import sootup.core.jimple.common.expr.AbstractInvokeExpr;
 
 public class ListAnalysisTest extends Setup {
 
-  @Before
-  public void setUp() {
-    executeArrayListAnalysis();
+  public ArrayAnalysisFact.ArrayAnalysis findStateByLocalName(Map<Value, ArrayAnalysisFact> facts, Value localName) {
+    ArrayAnalysisFact fact = facts.get(localName);
+    return fact != null ? fact.getState() : null;
   }
 
   @Test
-  public void testArrayListUsage() {
-    assertEquals(6, ArrayListAnalysis.getArrayUnsafeUsageCount());
-    assertEquals(6, ArrayListAnalysis.getArraySafeUsageCount());
+  public void IsEmptyCheck() {
+    Map<SootMethod, Map<Stmt, Map<Value, ArrayAnalysisFact>>> outFacts = executeArrayListAnalysis();
+    // test out facts for isEmpty call
+    for (SootMethod method : outFacts.keySet()) {
+      Map<Stmt, Map<Value, ArrayAnalysisFact>> result = outFacts.get(method);
+      for (Stmt stmt : result.keySet()) {
+        if (stmt.containsInvokeExpr()) {
+          AbstractInvokeExpr invokeStmt = stmt.getInvokeExpr();
+          if (invokeStmt instanceof JInterfaceInvokeExpr) {
+            JInterfaceInvokeExpr interfaceInvokeExpr = (JInterfaceInvokeExpr) invokeStmt;
+            Value base = interfaceInvokeExpr.getBase();
+            if (invokeStmt.getMethodSignature().getName().equals(ConstantValue.ISEMPTY)) {
+              assertEquals(ArrayAnalysisFact.ArrayAnalysis.Safe, findStateByLocalName(result.get(stmt), base));
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @Test
+  public void RemoveAndClearCheck() {
+    Map<SootMethod, Map<Stmt, Map<Value, ArrayAnalysisFact>>> outFacts = executeArrayListAnalysis();
+    // test out facts for remove call
+    for (SootMethod method : outFacts.keySet()) {
+      Map<Stmt, Map<Value, ArrayAnalysisFact>> result = outFacts.get(method);
+      for (Stmt stmt : result.keySet()) {
+        if (stmt.containsInvokeExpr()) {
+          AbstractInvokeExpr invokeStmt = stmt.getInvokeExpr();
+          if (invokeStmt instanceof JInterfaceInvokeExpr) {
+            JInterfaceInvokeExpr interfaceInvokeExpr = (JInterfaceInvokeExpr) invokeStmt;
+            Value base = interfaceInvokeExpr.getBase();
+            if (invokeStmt.getMethodSignature().getName().equals(ConstantValue.REMOVE)
+                || invokeStmt.getMethodSignature().getName().equals(ConstantValue.CLEAR)) {
+              assertEquals(ArrayAnalysisFact.ArrayAnalysis.Unsafe, findStateByLocalName(result.get(stmt), base));
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @Test
+  public void IteratorAndGetCheck() {
+    Map<SootMethod, Map<Stmt, Map<Value, ArrayAnalysisFact>>> outFacts = executeArrayListAnalysis();
+    // test out facts for iterator and get call
+    for (SootMethod method : outFacts.keySet()) {
+      Map<Stmt, Map<Value, ArrayAnalysisFact>> result = outFacts.get(method);
+      for (Stmt stmt : result.keySet()) {
+        if (stmt.containsInvokeExpr()) {
+          AbstractInvokeExpr invokeStmt = stmt.getInvokeExpr();
+          if (invokeStmt instanceof JInterfaceInvokeExpr) {
+            JInterfaceInvokeExpr interfaceInvokeExpr = (JInterfaceInvokeExpr) invokeStmt;
+            Value base = interfaceInvokeExpr.getBase();
+            if (invokeStmt.getMethodSignature().getName().equals(ConstantValue.ITERATOR)
+                || invokeStmt.getMethodSignature().getName().equals(ConstantValue.GET)) {
+              if (findStateByLocalName(result.get(stmt), base) == ArrayAnalysisFact.ArrayAnalysis.Unsafe
+                  || findStateByLocalName(result.get(stmt), base) == null) {
+                assertEquals(ArrayAnalysisFact.ArrayAnalysis.Unsafe, findStateByLocalName(result.get(stmt), base));
+              } else if (findStateByLocalName(result.get(stmt), base) == ArrayAnalysisFact.ArrayAnalysis.Safe) {
+                assertEquals(ArrayAnalysisFact.ArrayAnalysis.Safe, findStateByLocalName(result.get(stmt), base));
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }

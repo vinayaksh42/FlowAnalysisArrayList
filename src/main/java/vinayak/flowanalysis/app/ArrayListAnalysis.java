@@ -17,25 +17,12 @@ import sootup.core.types.ClassType;
 
 public class ArrayListAnalysis extends ForwardFlowAnalysis<Map<Value, ArrayAnalysisFact>> {
 
-  // change from static to non-static
-  private final Map<Value, Boolean> variableMap;
-  static int arrayUnsafeUsageCount;
-  static int arraySafeUsageCount;
-
   @Nonnull
   protected final JavaSootMethod method;
 
   public ArrayListAnalysis(@Nonnull JavaSootMethod method) {
     super(method.getBody().getStmtGraph());
     this.method = method;
-    System.out.println("Method: " + method.getSignature());
-    variableMap = new HashMap<>();
-  }
-
-  protected void prettyPrint(@Nonnull Map<Value, ArrayAnalysisFact> in, @Nonnull Stmt stmt,
-      @Nonnull Map<Value, ArrayAnalysisFact> out) {
-    String s = String.format("\t%10s%s\n\t%10s%s\n\t%10s%s\n", "In Fact: ", in, "Stmt: ", stmt, "Out Fact: ", out);
-    System.out.println(s);
   }
 
   public Map<Stmt, Map<Value, ArrayAnalysisFact>> getStmtToAfterFlow() {
@@ -45,8 +32,6 @@ public class ArrayListAnalysis extends ForwardFlowAnalysis<Map<Value, ArrayAnaly
   @Override
   protected void flowThrough(@Nonnull Map<Value, ArrayAnalysisFact> in, @Nonnull Stmt stmt,
       @Nonnull Map<Value, ArrayAnalysisFact> out) {
-    // System.out.println("Start");
-    // prettyPrint(in, stmt, out);
     copy(in, out);
     if (stmt.containsInvokeExpr()) {
       AbstractInvokeExpr invokeStmt = stmt.getInvokeExpr();
@@ -57,28 +42,19 @@ public class ArrayListAnalysis extends ForwardFlowAnalysis<Map<Value, ArrayAnaly
         Value base = interfaceInvokeExpr.getBase();
         if (baseClass.getClassName().equals(ConstantValue.LIST_CLASS_NAME)) {
           if (methodName.equals(ConstantValue.REMOVE) || methodName.equals(ConstantValue.CLEAR)) {
-            this.storingVariableMap(base, false);
             updateState(out, ArrayAnalysis.Unsafe, base);
           }
           if (methodName.equals(ConstantValue.ISEMPTY)) {
-            this.storingVariableMap(base, true);
             updateState(out, ArrayAnalysis.Safe, base);
           }
           if (methodName.equals(ConstantValue.ITERATOR) || methodName.equals(ConstantValue.GET)) {
             if (findStateByLocalName(in, base) == ArrayAnalysis.Unsafe || findStateByLocalName(in, base) == null) {
               updateState(out, ArrayAnalysis.Unsafe, base);
-              this.updateArrayUsageCount(true);
-            } else {
-              this.updateArrayUsageCount(false);
-              this.storingVariableMap(base, false);
             }
           }
         }
       }
     }
-    // System.out.println("End");
-    // prettyPrint(in, stmt, out);
-    // System.out.println("=============================================");
   }
 
   public ArrayAnalysisFact.ArrayAnalysis findStateByLocalName(Map<Value, ArrayAnalysisFact> facts, Value localName) {
@@ -108,30 +84,6 @@ public class ArrayListAnalysis extends ForwardFlowAnalysis<Map<Value, ArrayAnaly
     for (Value key : in2.keySet()) {
       out.put(key, new ArrayAnalysisFact(ArrayAnalysisFact.ArrayAnalysis.Unsafe));
     }
-  }
-
-  public void storingVariableMap(Value value, Boolean isUnsafe) {
-    variableMap.put(value, isUnsafe);
-  }
-
-  public void updateArrayUsageCount(boolean isUnsafe) {
-    if (isUnsafe) {
-      arrayUnsafeUsageCount++;
-    } else {
-      arraySafeUsageCount++;
-    }
-  }
-
-  public Map<Value, Boolean> getVariableMap() {
-    return variableMap;
-  }
-
-  public static int getArrayUnsafeUsageCount() {
-    return arrayUnsafeUsageCount;
-  }
-
-  public static int getArraySafeUsageCount() {
-    return arraySafeUsageCount;
   }
 
   private void updateState(Map<Value, ArrayAnalysisFact> facts, ArrayAnalysisFact.ArrayAnalysis newState,
